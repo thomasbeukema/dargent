@@ -1,0 +1,68 @@
+{
+	"i": "{txId}",	// timestamp_wallet
+	"p": "{previous txId}",
+	"t": "{timestamp}",	
+	"a": "{action}",	// 0-4
+	"c": "{currency}*{publisher}",	// emitted if native currency
+	"b": "{balance}",
+	"o": "{src pubkey}",
+	"d": "{dst address}",
+	"s": "{signature}",
+	"h": "{counterpart to make transaction complete}"
+}
+
+// SEND
+{
+	"i": "9deabea6dbcc0e78f84f164f7d13105febbeed91",
+	"p": "985abd52825b714e9356c73944b3592d37a55624",
+	"t": "1530457652",
+	"a": 0,
+	"b": "666",
+	"o": "iKAe2b5J1R5RZUARAdaENRFqgR9cczpTAz",
+	"d": "19D8Zk6Glo77oLtk7f382MpkQ14AZMC6fr",
+	"s": "MEQCICNK+qQrTHNDqaYgOOcetJ+XIgn3FdMdTeHMSZO481ByAiAL1MVNmP+BkGKougwm7+0oT/h/dgtE25mDApqX1NqXiw=="
+}
+
+// CLAIM
+{
+	"i": "9deabea6dbcc0e78f84f164f7d13105febbeed91",
+	"p": "985abd52825b714e9356c73944b3592d37a55624",
+	"t": "1530457652",
+	"a": 1,
+	"o": "iKAe2b5J1R5RZUARAdaENRFqgR9cczpTAz",
+	"s": "MEQCICNK+qQrTHNDqaYgOOcetJ+XIgn3FdMdTeHMSZO481ByAiAL1MVNmP+BkGKougwm7+0oT/h/dgtE25mDApqX1NqXiw=="
+}
+
+// CREATE
+{
+	"i": "9deabea6dbcc0e78f84f164f7d13105febbeed91",
+	"p": "985abd52825b714e9356c73944b3592d37a55624",
+	"t": "1530457652",
+	"a": 2,
+	"c": "test*iKAe2b5J1R5RZUARAdaENRFqgR9cczpTAz",
+	"b": "100",		// create 100 'test' tokens
+	"o": "19D8Zk6Glo77oLtk7f382MpkQ14AZMC6fr",
+	"s": "MEQCICNK+qQrTHNDqaYgOOcetJ+XIgn3FdMdTeHMSZO481ByAiAL1MVNmP+BkGKougwm7+0oT/h/dgtE25mDApqX1NqXiw=="
+}
+
+// TRUST
+{
+	"i": "9deabea6dbcc0e78f84f164f7d13105febbeed91",
+	"p": "985abd52825b714e9356c73944b3592d37a55624",
+	"t": "1530457652",
+	"a": 3,
+	"o": "iKAe2b5J1R5RZUARAdaENRFqgR9cczpTAz",
+	"d": "19D8Zk6Glo77oLtk7f382MpkQ14AZMC6fr",
+	"s": "MEQCICNK+qQrTHNDqaYgOOcetJ+XIgn3FdMdTeHMSZO481ByAiAL1MVNmP+BkGKougwm7+0oT/h/dgtE25mDApqX1NqXiw=="
+}
+
+
+
+
+
+
+
+
+
+
+
