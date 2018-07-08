@@ -23,5 +23,5 @@ func (c *Currency) GetOwnerAddress() string {
 }
 
 func NativeCurrency() Currency {
-	return Currency{"Argent", "AGE", "0"}
+	return Currency{"Argent", "ART", ""}
 }
