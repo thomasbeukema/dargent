@@ -19,11 +19,13 @@ type Shelf struct {
 	Txs      map[string][]string
 }
 
+// Utility func
 func getPath() string {
 	wd, _ := os.Getwd()
 	return filepath.Join(wd, "data")
 }
 
+// Return new empty shell with a signed CREATE tx
 func NewShelf(account address.KeyPair) Shelf {
 	tx, _ := transaction.NewCreateTransaction(account.GetAddress())
 	tx.Signature = account.SignTx([]byte(tx.Hash))
@@ -33,13 +35,14 @@ func NewShelf(account address.KeyPair) Shelf {
 	return s
 }
 
+// Open an already created shelf
 func OpenShelf(account string) Shelf {
 	path := filepath.Join(getPath(), account, "shelf.json.gz")
 
 	f, _ := os.Open(path)
 	defer f.Close()
 
-	gr, _ := gzip.NewReader(f)
+	gr, _ := gzip.NewReader(f) // Everything is gzipped
 	defer gr.Close()
 
 	var contents bytes.Buffer
@@ -51,10 +54,7 @@ func OpenShelf(account string) Shelf {
 	return s
 }
 
-func AddShelf(account string, tx transaction.Transaction) {
-
-}
-
+// Update a shelf in the library
 func (s *Shelf) UpdateLibrary() {
 	owner := s.CreateTx.Origin
 	shelfJson, _ := json.Marshal(s)
@@ -70,61 +70,66 @@ func (s *Shelf) UpdateLibrary() {
 	ioutil.WriteFile(filepath.Join(p, "shelf.json.gz"), []byte(gz.String()), 0644)
 }
 
+// Add a new tx to a shelf
 func (s *Shelf) ShelveTx(tx transaction.Transaction) bool {
-	if s.CreateTx.Origin != tx.Origin {
+	if s.CreateTx.Origin != tx.Origin { // Check if txOwner is also owner of the shelf, only owner can write to a shelf
 		return false
 	}
-	if tx.Verify() == true {
-		b := s.latestBook()
+	if tx.Verify() == true { // Check if tx is valid
+		b := s.latestBook() // Retrieve latest book
 		b.addTx(tx)
 		s.shelveBook(b)
-		s.Txs[b.Name] = append(s.Txs[b.Name], tx.Hash)
+		s.Txs[b.Name] = append(s.Txs[b.Name], tx.Hash) // Add txhash to list of txs in shelf
 		s.UpdateLibrary()
 		return true
 	}
 	return false
 }
 
+// Utility func
 func (s *Shelf) shelveBook(b book) {
 	b.shelve(s.CreateTx.Origin)
 }
 
+// Get the latest book in shelf
 func (s *Shelf) latestBook() book {
-	if len(s.Txs) == 0 {
+	if len(s.Txs) == 0 { // First tx
 		return newBook(string(len(s.Txs) + 1))
 	} else {
 		if len(s.Txs[string(len(s.Txs)-1)]) == maxTxs {
-			return newBook(string(len(s.Txs)))
+			return newBook(string(len(s.Txs))) // Book has reached max capacity: return empty one
 		} else {
 			name := fmt.Sprintf("%x.json.gz", string(len(s.Txs)))
 			path := filepath.Join(getPath(), s.CreateTx.Origin, name)
-			return retrieveBook(path)
+			return retrieveBook(path) // Return latest book
 		}
 	}
 }
 
+// Find a tx in shelf
 func (s *Shelf) FindTx(hash string) transaction.Transaction {
-	for k, v := range s.Txs {
-		for _, b := range v {
+	for k, v := range s.Txs { // Loop over all books in shelf
+		for _, b := range v { // Loop over every tx in book
 			if b == hash {
 				bk := retrieveBook(filepath.Join(getPath(), s.CreateTx.Origin, k))
 				return bk.getTx(hash)
 			}
 		}
 	}
-	return transaction.Transaction{}
+	return transaction.Transaction{} // Return empty at failure
 }
 
+// Get the latest tx
 func (s *Shelf) Newest() transaction.Transaction {
 	if len(s.Txs) == 0 {
-		return s.CreateTx
+		return s.CreateTx // If no txs return CREATE tx
 	} else {
-		latest := fmt.Sprintf("%x", string(len(s.Txs)))
+		latest := fmt.Sprintf("%x", string(len(s.Txs))) // Get newest book name
 		path := filepath.Join(getPath(), s.CreateTx.Origin, string(latest)+".json.gz")
-		latestBook := retrieveBook(path)
-		latestInBook := len(latestBook.Txs) - 1
+		latestBook := retrieveBook(path) // Get latest book
+		latestInBook := len(latestBook.Txs) - 1 // Newest tx appended, so last is newest
 
-		return latestBook.Txs[latestInBook]
+		return latestBook.Txs[latestInBook] // Return latest tx
 	}
-	return transaction.Transaction{}
+	return transaction.Transaction{} // Return empty at failure
 }
