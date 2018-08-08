@@ -1,4 +1,4 @@
-package library
+package transaction
 
 import (
 	"bytes"
@@ -67,21 +67,32 @@ func (s *Shelf) UpdateLibrary() {
 	p := filepath.Join(getPath(), owner)
 
 	os.MkdirAll(p, os.ModePerm)
-	ioutil.WriteFile(filepath.Join(p, "shelf.json.gz"), []byte(gz.String()), 0644)
+
+	if s.CreateTx.Currency.Ticker != transaction.NativeCurrency().Ticker { // Token
+		shelfName := "shelf_" + s.CreateTx.Currency.Ticker + ".json.gz"
+		ioutil.WriteFile(filepath.Join(p, "shelf.json.gz"), []byte(gz.String()), 0644)
+	} else { // Native Currency
+		ioutil.WriteFile(filepath.Join(p, "shelf.json.gz"), []byte(gz.String()), 0644)
+	}
 }
 
 // Add a new tx to a shelf
 func (s *Shelf) ShelveTx(tx transaction.Transaction) bool {
-	if s.CreateTx.Origin != tx.Origin { // Check if txOwner is also owner of the shelf, only owner can write to a shelf
+	if s.CreateTx.Origin != tx.Origin { // Check if txOwner is also owner of the shelf, only txs of owner can be written to a shelf
 		return false
 	}
 	if tx.Verify() == true { // Check if tx is valid
-		b := s.latestBook() // Retrieve latest book
-		b.addTx(tx)
-		s.shelveBook(b)
-		s.Txs[b.Name] = append(s.Txs[b.Name], tx.Hash) // Add txhash to list of txs in shelf
-		s.UpdateLibrary()
-		return true
+		if tx.Action == 2 {
+			tokenShelf := Shelf{tx, make(map[string][]string)} // Create new shelf with tx as opening tx
+			tokenShelf.UpdateLibrary()
+		} else {
+			b := s.latestBook() // Retrieve latest book
+			b.addTx(tx)
+			s.shelveBook(b)
+			s.Txs[b.Name] = append(s.Txs[b.Name], tx.Hash) // Add txhash to list of txs in shelf
+			s.UpdateLibrary()
+			return true
+		}
 	}
 	return false
 }
