@@ -8,8 +8,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-
-	"github.com/thomasbeukema/dargent/transaction"
 )
 
 // Define some constants used
@@ -20,12 +18,12 @@ const (
 // Define default structure for a book
 type book struct {
 	Name string
-	Txs  []transaction.Transaction
+	Txs  []Transaction
 }
 
 // Return a new, empty txbook
 func newBook(name string) book {
-	return book{name, make([]transaction.Transaction, 0)}
+	return book{name, make([]Transaction, 0)}
 }
 
 // Save a book to the library of specified user
@@ -61,16 +59,16 @@ func retrieveBook(path string) book {
 }
 
 // Add a tx to the tx list in book
-func (b *book) addTx(tx transaction.Transaction) {
+func (b *book) addTx(tx Transaction) {
 	b.Txs = append(b.Txs, tx)
 }
 
 // Find a tx in the book
-func (b *book) getTx(hash string) transaction.Transaction {
+func (b *book) getTx(hash string) *Transaction {
 	for _, tx := range b.Txs {	// Loop over every tx
 		if tx.Hash == hash { // Check hash
-			return tx
+			return &tx
 		}
 	}
-	return transaction.Transaction{} // Return empty tx on failure
+	return &Transaction{} // Return empty tx on failure
 }

@@ -10,12 +10,11 @@ import (
 	"path/filepath"
 
 	"github.com/thomasbeukema/dargent/address"
-	"github.com/thomasbeukema/dargent/transaction"
 )
 
 // Define struct for storage
 type Shelf struct {
-	CreateTx transaction.Transaction
+	CreateTx Transaction
 	Txs      map[string][]string
 }
 
@@ -27,7 +26,7 @@ func getPath() string {
 
 // Return new empty shell with a signed CREATE tx
 func NewShelf(account address.KeyPair) Shelf {
-	tx, _ := transaction.NewCreateTransaction(account.GetAddress())
+	tx, _ := NewCreateTransaction(account.GetAddress())
 	tx.Signature = account.SignTx([]byte(tx.Hash))
 
 	s := Shelf{tx, make(map[string][]string)}
@@ -68,16 +67,16 @@ func (s *Shelf) UpdateLibrary() {
 
 	os.MkdirAll(p, os.ModePerm)
 
-	if s.CreateTx.Currency.Ticker != transaction.NativeCurrency().Ticker { // Token
+	if s.CreateTx.Currency.Ticker != NativeCurrency().Ticker { // Token
 		shelfName := "shelf_" + s.CreateTx.Currency.Ticker + ".json.gz"
-		ioutil.WriteFile(filepath.Join(p, "shelf.json.gz"), []byte(gz.String()), 0644)
+		ioutil.WriteFile(filepath.Join(p, shelfName), []byte(gz.String()), 0644)
 	} else { // Native Currency
 		ioutil.WriteFile(filepath.Join(p, "shelf.json.gz"), []byte(gz.String()), 0644)
 	}
 }
 
 // Add a new tx to a shelf
-func (s *Shelf) ShelveTx(tx transaction.Transaction) bool {
+func (s *Shelf) ShelveTx(tx Transaction) bool {
 	if s.CreateTx.Origin != tx.Origin { // Check if txOwner is also owner of the shelf, only txs of owner can be written to a shelf
 		return false
 	}
@@ -118,7 +117,13 @@ func (s *Shelf) latestBook() book {
 }
 
 // Find a tx in shelf
-func (s *Shelf) FindTx(hash string) transaction.Transaction {
+func (s *Shelf) FindTx(hash string) *Transaction {
+	fmt.Println(hash)
+
+	if s.CreateTx.Hash == hash {
+		return &s.CreateTx
+	}
+
 	for k, v := range s.Txs { // Loop over all books in shelf
 		for _, b := range v { // Loop over every tx in book
 			if b == hash {
@@ -127,11 +132,11 @@ func (s *Shelf) FindTx(hash string) transaction.Transaction {
 			}
 		}
 	}
-	return transaction.Transaction{} // Return empty at failure
+	return &Transaction{} // Return empty at failure
 }
 
 // Get the latest tx
-func (s *Shelf) Newest() transaction.Transaction {
+func (s *Shelf) Newest() Transaction {
 	if len(s.Txs) == 0 {
 		return s.CreateTx // If no txs return CREATE tx
 	} else {
@@ -142,5 +147,5 @@ func (s *Shelf) Newest() transaction.Transaction {
 
 		return latestBook.Txs[latestInBook] // Return latest tx
 	}
-	return transaction.Transaction{} // Return empty at failure
+	return Transaction{} // Return empty at failure
 }

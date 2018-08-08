@@ -9,7 +9,7 @@ import (
 	"encoding/base32"
 	"encoding/base64"
 
-	"github.com/golang/crypto/blake2b"
+	_ "github.com/golang/crypto/blake2b"
 	"github.com/tyler-smith/go-bip39"
 	_ "golang.org/x/crypto/bcrypt"
 )
@@ -75,11 +75,10 @@ func (kp KeyPair) GetAddress() string {
 	return address
 }
 
-// Generate hash to slow things down a bit
+// Generate hash for validation
 func generateChecksum(payload []byte) []byte {
-	hash, _ := blake2b.New(11, nil)
-	hash.Write(payload)
-	finalHash := sha256.Sum256(hash.Sum(nil))
+	hash := sha256.Sum256(payload)
+	finalHash := sha256.Sum256(hash[:])
 
 	return finalHash[:checksumLength]
 }
@@ -92,7 +91,7 @@ func HashPubKey(pubKey []byte) []byte {
 
 // Check if an address is actually valid
 func ValidateAddress(address string) bool {
-	address = address[3 : len(address)-3]                                                      // Remove the '666' prefix and '999' appendix
+	address = address[3 : len(address)-3]                                                  // Remove the '666' prefix and '999' appendix
 	checksum := address[len(address)-8:]                                                       // Extract already generated checksum
 	decodedPubkey, _ := waspEncoding.DecodeString(address[:len(address)-8])                    // Extract en decode public key from address
 	targetChecksum := waspEncoding.EncodeToString(generateChecksum(HashPubKey(decodedPubkey))) // Generate new checksum to see if there hasn't been tampered with
