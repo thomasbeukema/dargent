@@ -1,5 +1,10 @@
 package node
 
-const (
-	PORT = 8963
-)
+type Node struct {
+	s	server
+	c	client
+}
+
+func NewNode(host string) {
+
+}
