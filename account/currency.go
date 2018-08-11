@@ -1,4 +1,4 @@
-package transaction
+package account
 
 type Currency struct {
 	Name	string			`json:"n"`

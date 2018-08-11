@@ -1,13 +1,13 @@
-package transaction
+package account
 
 import (
 	"fmt"
 	"encoding/json"
-	"encoding/base64"
+	_ "encoding/base64"
 	"crypto/sha256"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"math/big"
+	_ "crypto/ecdsa"
+	_ "crypto/elliptic"
+	_ "math/big"
 	"time"
 	"strconv"
 	"errors"
@@ -34,7 +34,6 @@ type Transaction struct {
 	Origin			string				`json:"o"`				// Sender / src tx for claim tx
 	Destination		string				`json:"d,omitempty"`	// Receiver
 	Expiration		string				`json:"e,omitempty"`	// Expiration for trust certificates
-	Signature		string				`json:"s"`				// Signature to ensure the owner produced this
 }
 
 // Generate hash for a transaction to ensure the authenticity of the contents of the transaction
@@ -49,7 +48,6 @@ func (tx *Transaction) GenerateHash() (string, error) {
 				Currency: tx.Currency,
 				Origin: tx.Origin,
 				Destination: tx.Destination,
-				Signature: "",
 			}
 
 			txJson, err := json.Marshal(minTx) // Encode tx in JSON
@@ -68,7 +66,6 @@ func (tx *Transaction) GenerateHash() (string, error) {
 				Action: Send,
 				Origin: tx.Origin,
 				Destination: tx.Destination,
-				Signature: "",
 			}
 
 			txJson, err := json.Marshal(minTx)
@@ -87,7 +84,6 @@ func (tx *Transaction) GenerateHash() (string, error) {
 				Balance: tx.Balance,
 				Currency: tx.Currency,
 				Origin: tx.Origin,
-				Signature: "",
 			}
 
 			txJson, err := json.Marshal(minTx)
@@ -107,7 +103,6 @@ func (tx *Transaction) GenerateHash() (string, error) {
 				Origin: tx.Origin,
 				Destination: tx.Destination,
 				Expiration: tx.Origin,
-				Signature: "",
 			}
 
 			txJson, err := json.Marshal(minTx)
@@ -128,7 +123,6 @@ func (tx *Transaction) GenerateHash() (string, error) {
 func (tx *Transaction) Verify() bool {
 	switch tx.Action { // Each txtype has other factors to determine if tx is valid
 		case Send:
-			// TODO: Check previous hash
 			// TODO: Check if address has sufficient balance
 			if tx.Balance < 0 { // Balance can't be negative
 				return false
@@ -145,7 +139,6 @@ func (tx *Transaction) Verify() bool {
 				return false
 			}
 		case Create:
-			// TODO: Check previous hash
 			/*if tx.Balance != 0 && tx.Currency == NativeCurrency() { // For account creation balance can't be != 0; token creation balance must be != 0
 				return false
 			}*/
@@ -180,7 +173,7 @@ func (tx *Transaction) Verify() bool {
 		return false
 	}
 
-	if tx.Action != Create { // Check previous hash
+	/*if tx.Action != Create { // Check previous hash
 		accountShelf := OpenShelf(tx.Origin)
 		previousTx := accountShelf.FindTx(tx.PreviousHash)
 		if !previousTx.Verify() {
@@ -197,7 +190,7 @@ func (tx *Transaction) Verify() bool {
 	}
 	curve := elliptic.P256() // Init curve
 
-	signatureBytes, _ := base64.StdEncoding.DecodeString(tx.Signature) // Extract signature
+	signatureBytes, _ := base64.StdEncoding.DecodeString("") // Extract signature
 	signatureLength := len(signatureBytes)
 
 	r := big.Int{} // Parse signature in 2 parts
@@ -216,21 +209,20 @@ func (tx *Transaction) Verify() bool {
 	rawPubKey := ecdsa.PublicKey{curve, &x, &y} // Init public key for verification
 	if ecdsa.Verify(&rawPubKey, []byte(tx.Hash), &r, &s) == false {
 		return false
-	}
+	}*/
 
 	return true
 }
 
-func NewSendTransaction(account address.KeyPair, ph string, destination string, amount uint64, c Currency) (Transaction, error) {
+func NewSendTransaction(account string, ph string, destination string, amount uint64, c Currency) (Transaction, error) {
 	tx := Transaction{
 		Hash: "",
 		PreviousHash: ph,
 		Action: Send,
 		Balance: amount,
 		Currency: c,
-		Origin: account.GetAddress(),
+		Origin: account,
 		Destination: destination,
-		Signature: "",
 	}
 
 	tx.Hash,_ = tx.GenerateHash()
@@ -238,14 +230,13 @@ func NewSendTransaction(account address.KeyPair, ph string, destination string, 
 	return tx, nil
 }
 
-func NewClaimTransaction(account address.KeyPair, ph string, txId string) (Transaction, error) {
+func NewClaimTransaction(account string, ph string, txId string) (Transaction, error) {
 	tx := Transaction{
 		Hash: "",
 		PreviousHash: ph,
 		Action: Claim,
 		Origin: txId,
-		Destination: account.GetAddress(),
-		Signature: "",
+		Destination: account,
 	}
 
 	tx.Hash,_ = tx.GenerateHash()
@@ -260,7 +251,6 @@ func NewCreateTransaction(account string) (Transaction, error) {
 		Currency: NativeCurrency(),
 		Balance: 0,
 		Origin: account,
-		Signature: "",
 	}
 
 	tx.Hash,_ = tx.GenerateHash()
@@ -268,13 +258,12 @@ func NewCreateTransaction(account string) (Transaction, error) {
 	return tx, nil
 }
 
-func NewCreateTokenTransaction(account address.KeyPair, c Currency, amount uint64) (Transaction, error) {
+func NewCreateTokenTransaction(account string, c Currency, amount uint64) (Transaction, error) {
 	tx := Transaction{
 		Hash: "",
 		Action: Create,
 		Currency: c,
 		Balance: amount,
-		Signature: "",
 	}
 
 	tx.Hash,_ = tx.GenerateHash()
@@ -282,15 +271,14 @@ func NewCreateTokenTransaction(account address.KeyPair, c Currency, amount uint6
 	return tx, nil
 }
 
-func NewTrustTransaction(account address.KeyPair, destination string, expiration string) (Transaction, error) {
+func NewTrustTransaction(account string, destination string, expiration string) (Transaction, error) {
 	tx := Transaction{
 		Hash: "",
 		PreviousHash: "",
 		Action: Trust,
-		Origin: account.GetAddress(),
+		Origin: account,
 		Destination: destination,
 		Expiration: expiration,
-		Signature: "",
 	}
 
 	tx.Hash,_ = tx.GenerateHash()
