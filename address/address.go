@@ -2,6 +2,7 @@ package address
 
 import (
     "crypto/sha256"
+    "fmt"
 )
 
 const (
@@ -16,7 +17,16 @@ const (
 var sphincsPadding []byte = []byte{0x00, 0x11, 0x22}
 
 // TODO: Complete function
-func ValidateAddress(_ string) bool {
+func ValidateAddress(address string) bool {
+
+    if len(address) == 118 && address[:3] == "666" && address[len(address)-3:] == "999" { // ECDSA
+        fmt.Println("ECDSA")
+    } else if len(address) == 70 && address[:3] == "999" && address[len(address)-3:] == "666" { // SPHINCS
+        validateSPHINCSAddress(address)
+    } else {
+        return false
+    }
+
     return true
 }
 

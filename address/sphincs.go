@@ -36,7 +36,21 @@ func SPHINCSPubKeyToAddress(pubkey []byte) string {
     b32Pubkey := waspEncoding.EncodeToString(pubkey)                                 // Generate Base32 of public key
     b32Checksum := waspEncoding.EncodeToString(generateChecksum(HashPubKey(pubkey))) // Get checksum for the public key and generate Base32 of it
 
-    return b32Pubkey + b32Checksum
+    return "999" + b32Pubkey + b32Checksum + "666"
+}
+
+func validateSPHINCSAddress(address string) bool {
+
+    if address[:3] != "999" || address[len(address)-3:] != "666" {
+        return false
+    }
+
+    address = address[3:len(address)-3] // Strip '999' & '666'
+
+    checksum := address[len(address)-8:]
+    generatedChecksum := waspEncoding.EncodeToString(generateChecksum([]byte(address[:len(address)-8])))
+
+    return checksum == generatedChecksum
 }
 
 func (kp SPHINCSKeyPair) GetAddress() string {
