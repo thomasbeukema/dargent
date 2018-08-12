@@ -18,7 +18,7 @@ func main() {
 
 
 	fmt.Printf("Address 1: %s\n", a1)
-	//fmt.Printf("Valid: %v\n", address.ValidateAddress(a1))
+	fmt.Printf("Valid: %v\n", address.ValidateAddress(a1))
 	fmt.Printf("Address 2: %s\n", a2)
 	fmt.Printf("Valid: %v\n", address.ValidateAddress(a2))
 

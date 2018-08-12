@@ -40,13 +40,26 @@ func GenerateECCKeyPair(seed []byte) ECCKeyPair {
 }
 
 func ECCPubKeyToAddress(pubkey []byte) string {
-	pubkey = append(pubkey, byte(0x00)) // Append padding byte to avoid the Base32 '=' padding
+    pubkey = append(HashPubKey(pubkey), ecdsaPadding...)
 
-	b32Pubkey := waspEncoding.EncodeToString(pubkey)                                 // Generate Base32 of public key
-	b32Checksum := waspEncoding.EncodeToString(generateChecksum(HashPubKey(pubkey))) // Get checksum for the public key and generate Base32 of it
+    b32Pubkey := waspEncoding.EncodeToString(pubkey)                                 // Generate Base32 of public key
+    b32Checksum := waspEncoding.EncodeToString(generateChecksum(HashPubKey(pubkey))) // Get checksum for the public key and generate Base32 of it
 
-	address := "666" + b32Pubkey + b32Checksum + "999" // Pre-/append hardcoded strings to complete address
-	return address
+    return "666" + b32Pubkey + b32Checksum + "999"
+}
+
+func validateECDSAAddress(address string) bool {
+
+    if address[:3] != "666" || address[len(address)-3:] != "999" {
+        return false
+    }
+
+    address = address[3:len(address)-3] // Strip '666' & '999'
+
+    checksum := address[len(address)-8:]
+    generatedChecksum := waspEncoding.EncodeToString(generateChecksum([]byte(address[:len(address)-8])))
+
+    return checksum == generatedChecksum
 }
 
 // Get address from public key
@@ -63,14 +76,7 @@ func ValidateECCAddress(address string) bool {
 	return checksum == targetChecksum
 }
 
-// Reverse PubKeyToAddress function
-func ECCAddressToPubKey(address string) []byte {
-	address = address[3 : len(address)-3]                            // Remove the '666' prefix and '999' appendix
-	pubkey, _ := waspEncoding.DecodeString(address[:len(address)-8]) // Extract en decode public key from address
-	return pubkey[:len(pubkey)-1]
-}
-
-// Sign a transaction with private key
+// Sign with private key
 func (kp ECCKeyPair) Sign(hash []byte) string {
 	// TODO: Error checking
 	r, s, _ := ecdsa.Sign(rand.Reader, &kp.PrivateKey, hash) // Sign the hash
