@@ -5,13 +5,11 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"encoding/base32"
 	"encoding/base64"
 	"math/big"
-)
 
-// Define custom base32 encoding
-var waspEncoding = base32.NewEncoding(charset)
+	"github.com/mr-tron/base58/base58"
+)
 
 // Struct to hold ECC Keys
 type ECCKeyPair struct {
@@ -43,8 +41,8 @@ func GenerateECCKeyPair(seed []byte) ECCKeyPair {
 func ECCPubKeyToAddress(pubkey []byte) string {
     pubkey = append(HashPubKey(pubkey), ecdsaPadding...)
 
-    b32Pubkey := waspEncoding.EncodeToString(pubkey)                                 // Generate Base32 of public key
-    b32Checksum := waspEncoding.EncodeToString(generateChecksum(HashPubKey(pubkey))) // Get checksum for the public key and generate Base32 of it
+    b32Pubkey := base58.Encode(pubkey)                                 // Generate Base58 of public key
+    b32Checksum := base58.Encode(generateChecksum(HashPubKey(pubkey))) // Get checksum for the public key and generate Base32 of it
 
     return "666" + b32Pubkey + b32Checksum + "999"
 }
@@ -58,7 +56,7 @@ func validateECDSAAddress(address string) bool {
     address = address[3:len(address)-3] // Strip '666' & '999'
 
     checksum := address[len(address)-8:]
-    generatedChecksum := waspEncoding.EncodeToString(generateChecksum([]byte(address[:len(address)-8])))
+    generatedChecksum := base58.Encode(generateChecksum([]byte(address[:len(address)-8])))
 
     return checksum == generatedChecksum
 }
@@ -72,8 +70,8 @@ func (kp ECCKeyPair) GetAddress() string {
 func ValidateECCAddress(address string) bool {
 	address = address[3 : len(address)-3]                                                  // Remove the '666' prefix and '999' appendix
 	checksum := address[len(address)-8:]                                                       // Extract already generated checksum
-	decodedPubkey, _ := waspEncoding.DecodeString(address[:len(address)-8])                    // Extract en decode public key from address
-	targetChecksum := waspEncoding.EncodeToString(generateChecksum(HashPubKey(decodedPubkey))) // Generate new checksum to see if there hasn't been tampered with
+	decodedPubkey, _ := base58.Decode(address[:len(address)-8])                    // Extract en decode public key from address
+	targetChecksum := base58.Encode(generateChecksum(HashPubKey(decodedPubkey))) // Generate new checksum to see if there hasn't been tampered with
 	return checksum == targetChecksum
 }
 

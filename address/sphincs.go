@@ -6,6 +6,7 @@ import (
     "encoding/base64"
 
     "github.com/Yawning/sphincs256"
+    "github.com/mr-tron/base58/base58"
 )
 
 type SPHINCSKeyPair struct {
@@ -34,8 +35,8 @@ func GenerateSPHINCSKeyPair(seed []byte) SPHINCSKeyPair {
 func SPHINCSPubKeyToAddress(pubkey []byte) string {
     pubkey = append(HashPubKey(pubkey), sphincsPadding...)
 
-    b32Pubkey := waspEncoding.EncodeToString(pubkey)                                 // Generate Base32 of public key
-    b32Checksum := waspEncoding.EncodeToString(generateChecksum(HashPubKey(pubkey))) // Get checksum for the public key and generate Base32 of it
+    b32Pubkey := base58.Encode(pubkey)                                 // Generate Base32 of public key
+    b32Checksum := base58.Encode(generateChecksum(HashPubKey(pubkey))) // Get checksum for the public key and generate Base32 of it
 
     return "999" + b32Pubkey + b32Checksum + "666"
 }
@@ -49,7 +50,7 @@ func validateSPHINCSAddress(address string) bool {
     address = address[3:len(address)-3] // Strip '999' & '666'
 
     checksum := address[len(address)-8:]
-    generatedChecksum := waspEncoding.EncodeToString(generateChecksum([]byte(address[:len(address)-8])))
+    generatedChecksum := base58.Encode(generateChecksum([]byte(address[:len(address)-8])))
 
     return checksum == generatedChecksum
 }
