@@ -3,38 +3,37 @@ package main
 import (
 	"fmt"
 
-	_ "github.com/thomasbeukema/dargent/account"
+	"github.com/thomasbeukema/dargent/account"
 	"github.com/thomasbeukema/dargent/address"
 
-	_ "github.com/davecgh/go-spew/spew"
+	"github.com/davecgh/go-spew/spew"
 )
 
 func main() {
 	kp1 := address.GenerateECCKeyPair(nil)
 	kp2 := address.GenerateSPHINCSKeyPair(nil)
 
-	kp3 := address.GenerateECCKeyPair(nil)
-	kp4 := address.GenerateSPHINCSKeyPair(nil)
+	pk2 := kp2.PublicKey[:]
 
 	a1 := string(kp1.GetAddress())
 	a2 := string(kp2.GetAddress())
 
-	fmt.Println(len(kp1.PublicKey))
-	fmt.Println(len(kp2.PublicKey))
-
 	fmt.Printf("Address 1: %s\n", a1)
-	fmt.Printf("Valid: %v\n", address.ValidateAddress(a1))
 	fmt.Printf("Address 2: %s\n", a2)
-	fmt.Printf("Valid: %v\n", address.ValidateAddress(a2))
 
-	msg := "Hey, I'm authentic."
+	tx1, _ := account.NewCreateTransaction(kp1.PublicKey)
+	tx2, _ := account.NewCreateTransaction(pk2)
 
-	sig1 := kp1.Sign([]byte(msg))
-	sig2 := kp2.Sign([]byte(msg))
+	spew.Dump(tx1)
 
-	valid1 := address.ValidateECCSignature(sig1, msg, kp3.PublicKey)
-	valid2 := address.ValidateSPHINCSSignature(sig2, msg, kp4.PublicKey)
+	acc1 := account.OpenAccount(a1, kp1.PublicKey)
+	acc1.AddTransaction(tx1)
 
-	fmt.Println(valid1)
-	fmt.Println(valid2)
+	acc2 := account.OpenAccount(a2, pk2)
+	acc2.AddTransaction(tx2)
+
+	a3 := "66623i6TYjH7YM1jnLKmTG9emhsEmy1bf63aw6kR95pUR1FYRUPJRtuqnH999"
+
+	pub := account.GetPublicKeyFromAddress(a3)
+	spew.Dump(pub)
 }

@@ -5,9 +5,6 @@ import (
 )
 
 const (
-	// Define custom charset for address
-	charset = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
-
 	// Length of the checksum attached
 	checksumLength = 5
 )
@@ -27,9 +24,9 @@ const (
 // TODO: Complete function
 func ValidateAddress(address string) bool {
 
-    if len(address) == 70 && address[:3] == "666" && address[len(address)-3:] == "999" { // ECDSA
+    if len(address) == 61 && address[:3] == "666" && address[len(address)-3:] == "999" { // ECDSA
         validateECDSAAddress(address)
-    } else if len(address) == 70 && address[:3] == "999" && address[len(address)-3:] == "666" { // SPHINCS
+    } else if len(address) == 61 && address[:3] == "999" && address[len(address)-3:] == "666" { // SPHINCS
         validateSPHINCSAddress(address)
     } else {
         return false
@@ -39,9 +36,9 @@ func ValidateAddress(address string) bool {
 }
 
 func TypeOfAddress(address string) AccountType {
-    if len(address) == 70 && address[:3] == "666" && address[len(address)-3:] == "999" { // ECDSA
+    if len(address) == 61 && address[:3] == "666" && address[len(address)-3:] == "999" { // ECDSA
         return ECC
-    } else if  len(address) == 70 && address[:3] == "999" && address[len(address)-3:] == "666" { // SPHINCS
+    } else if  len(address) == 61 && address[:3] == "999" && address[len(address)-3:] == "666" { // SPHINCS
         return SPHINCS
     } else {
         return UNKNOWN

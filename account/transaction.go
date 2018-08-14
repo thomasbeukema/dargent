@@ -3,7 +3,7 @@ package account
 import (
 	"fmt"
 	"encoding/json"
-	_ "encoding/base64"
+	"encoding/base64"
 	"crypto/sha256"
 	_ "crypto/ecdsa"
 	_ "crypto/elliptic"
@@ -123,7 +123,6 @@ func (tx *Transaction) GenerateHash() (string, error) {
 func (tx *Transaction) Verify() bool {
 	switch tx.Action { // Each txtype has other factors to determine if tx is valid
 		case Send:
-			// TODO: Check if address has sufficient balance
 			if tx.Balance < 0 { // Balance can't be negative
 				return false
 			}
@@ -134,14 +133,11 @@ func (tx *Transaction) Verify() bool {
 				return false
 			}
 		case Claim:
-			// TODO: Check origin hash
+			// TODO: Check origin tx
 			if address.ValidateAddress(tx.Destination) != true {
 				return false
 			}
 		case Create:
-			/*if tx.Balance != 0 && tx.Currency == NativeCurrency() { // For account creation balance can't be != 0; token creation balance must be != 0
-				return false
-			}*/
 			if tx.Balance == 0 && tx.Currency != NativeCurrency() {
 				return false
 			}
@@ -172,44 +168,6 @@ func (tx *Transaction) Verify() bool {
 	if h, _ := tx.GenerateHash(); tx.Hash != h { // Check the authenticity of the content
 		return false
 	}
-
-	/*if tx.Action != Create { // Check previous hash
-		accountShelf := OpenShelf(tx.Origin)
-		previousTx := accountShelf.FindTx(tx.PreviousHash)
-		if !previousTx.Verify() {
-			return false
-		}
-	}
-
-	var pubkey []byte
-
-	if tx.Action == 2 && tx.Currency != NativeCurrency() {
-		pubkey = address.AddressToPubKey(tx.Currency.Owner) // Get pubkey from owner of currency when creating new token
-	} else {
-		pubkey = address.AddressToPubKey(tx.Origin) // Extract public key from address
-	}
-	curve := elliptic.P256() // Init curve
-
-	signatureBytes, _ := base64.StdEncoding.DecodeString("") // Extract signature
-	signatureLength := len(signatureBytes)
-
-	r := big.Int{} // Parse signature in 2 parts
-	s := big.Int{}
-
-	r.SetBytes(signatureBytes[:(signatureLength/2)])
-	s.SetBytes(signatureBytes[(signatureLength/2):])
-
-	x := big.Int{} // Parse public key in 2 parts
-	y := big.Int{}
-
-	keyLength := len(pubkey)
-	x.SetBytes(pubkey[:(keyLength/2)])
-	y.SetBytes(pubkey[(keyLength/2):])
-
-	rawPubKey := ecdsa.PublicKey{curve, &x, &y} // Init public key for verification
-	if ecdsa.Verify(&rawPubKey, []byte(tx.Hash), &r, &s) == false {
-		return false
-	}*/
 
 	return true
 }
@@ -244,13 +202,15 @@ func NewClaimTransaction(account string, ph string, txId string) (Transaction, e
 	return tx, nil
 }
 
-func NewCreateTransaction(pubkey string) (Transaction, error) {
+func NewCreateTransaction(pubkey []byte) (Transaction, error) {
+	b64pubkey := base64.StdEncoding.EncodeToString(pubkey)
+
 	tx := Transaction{
 		Hash: "",
 		Action: Create,
 		Currency: NativeCurrency(),
 		Balance: 0,
-		Origin: pubkey,
+		Origin: b64pubkey,
 	}
 
 	tx.Hash,_ = tx.GenerateHash()

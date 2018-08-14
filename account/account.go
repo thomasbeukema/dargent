@@ -2,7 +2,6 @@ package account
 
 import (
     "os"
-    "encoding/base64"
     "path/filepath"
     "encoding/json"
     "compress/gzip"
@@ -100,9 +99,7 @@ func OpenAccount(addr string, publicKey []byte) Account {
 }
 
 func (acc *Account) getLedgerPath(currency string) string {
-    b64PubKey := base64.StdEncoding.EncodeToString(acc.PublicKey)
-    path := getPathByAddress(b64PubKey)
-
+    path := getPathByAddress(acc.Address)
     return filepath.Join(path, currency)
 }
 
@@ -110,7 +107,7 @@ func (acc *Account) OpenLedger(currency string) Ledger {
     ledgerPath := acc.getLedgerPath(currency)
 
     if pathExists(ledgerPath) { // Already created ledger
-        f, err := os.Open(filepath.Join(ledgerPath, "index.json.gzip"))
+        f, err := os.Open(filepath.Join(ledgerPath, "index.json.gz"))
         defer f.Close()
         if err != nil {
             // TODO: Proper err handling
@@ -137,10 +134,8 @@ func (acc *Account) OpenLedger(currency string) Ledger {
         return led
     } else { // Create ledger
         led := Ledger{
-            Path: ledgerPath,
             Currency: currency,
             TxList: make([]Transaction, 0),
-            Signature: "",
         }
 
         ledgerJson, err := json.Marshal(led)
@@ -167,4 +162,9 @@ func GetPublicKeyFromAddress(addr string) string {
     led := acc.OpenLedger(NativeCurrency().Ticker)
 
     return led.TxList[0].Origin
+}
+
+func (acc *Account) AddTransaction(tx Transaction) {
+    led := acc.OpenLedger(tx.Currency.Ticker)
+    led.addTransaction(tx, acc)
 }
