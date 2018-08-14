@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"encoding/base32"
 	"encoding/base64"
+	"math/big"
 )
 
 // Define custom base32 encoding
@@ -82,4 +83,31 @@ func (kp ECCKeyPair) Sign(hash []byte) string {
 	r, s, _ := ecdsa.Sign(rand.Reader, &kp.PrivateKey, hash) // Sign the hash
 	signature := append(r.Bytes(), s.Bytes()...)             // Append both parts to get 1 signature
 	return base64.StdEncoding.EncodeToString(signature)      // Return the base64 encoded signature
+}
+
+func ValidateECCSignature(sig string, hash string, pubkey []byte) bool {
+	curve := elliptic.P256() // Init curve
+
+	signatureBytes, _ := base64.StdEncoding.DecodeString(sig) // Extract signature
+	signatureLength := len(signatureBytes)
+
+	r := big.Int{} // Parse signature in 2 parts
+	s := big.Int{}
+
+	r.SetBytes(signatureBytes[:(signatureLength/2)])
+	s.SetBytes(signatureBytes[(signatureLength/2):])
+
+	x := big.Int{} // Parse public key in 2 parts
+	y := big.Int{}
+
+	keyLength := len(pubkey)
+	x.SetBytes(pubkey[:(keyLength/2)])
+	y.SetBytes(pubkey[(keyLength/2):])
+
+	rawPubKey := ecdsa.PublicKey{curve, &x, &y} // Init public key for verification
+	if ecdsa.Verify(&rawPubKey, []byte(hash), &r, &s) == false {
+		return false
+	}
+
+	return true
 }

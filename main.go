@@ -13,33 +13,28 @@ func main() {
 	kp1 := address.GenerateECCKeyPair(nil)
 	kp2 := address.GenerateSPHINCSKeyPair(nil)
 
+	kp3 := address.GenerateECCKeyPair(nil)
+	kp4 := address.GenerateSPHINCSKeyPair(nil)
+
 	a1 := string(kp1.GetAddress())
 	a2 := string(kp2.GetAddress())
 
+	fmt.Println(len(kp1.PublicKey))
+	fmt.Println(len(kp2.PublicKey))
 
 	fmt.Printf("Address 1: %s\n", a1)
 	fmt.Printf("Valid: %v\n", address.ValidateAddress(a1))
 	fmt.Printf("Address 2: %s\n", a2)
 	fmt.Printf("Valid: %v\n", address.ValidateAddress(a2))
 
-	/*//shelf := transaction.NewShelf(kp1)
-	shelf := transaction.OpenShelf(kp1.GetAddress())
-	shelf.UpdateLibrary()
+	msg := "Hey, I'm authentic."
 
-	newCurrency := transaction.NewCurrency("SATAN", "STN", a1)
+	sig1 := kp1.Sign([]byte(msg))
+	sig2 := kp2.Sign([]byte(msg))
 
-	tx, _ := transaction.NewCreateTokenTransaction(kp1, newCurrency, 666)
-	tx.Signature = kp1.SignTx([]byte(tx.Hash))
-	shelf.ShelveTx(tx)
+	valid1 := address.ValidateECCSignature(sig1, msg, kp3.PublicKey)
+	valid2 := address.ValidateSPHINCSSignature(sig2, msg, kp4.PublicKey)
 
-	//spew.Dump(tx)
-
-	shelf2 := transaction.NewShelf(kp2)
-	//shelf2 := transaction.OpenShelf(kp2)
-	shelf2.UpdateLibrary()
-
-	tx2, _ := transaction.NewSendTransaction(kp2, shelf2.Newest().Hash, a1, 100, transaction.NativeCurrency())
-	tx2.Signature = kp2.SignTx([]byte(tx2.Hash))
-	spew.Dump(shelf2)
-	shelf2.ShelveTx(tx2)*/
+	fmt.Println(valid1)
+	fmt.Println(valid2)
 }

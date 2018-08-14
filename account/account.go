@@ -12,14 +12,8 @@ import (
     "github.com/thomasbeukema/dargent/address"
 )
 
-type AccountType int
-const (
-    ECC AccountType = iota // 0
-    SPHINCS // 1
-)
-
 type Account struct {
-    Type        AccountType
+    Type        address.AccountType
     PublicKey   []byte
     Address     string
     Currencies  []string
@@ -37,7 +31,7 @@ func pathExists(path string) bool {
     }
 }
 
-func getPathFromPubKey(key string) string {
+func getPathByAddress(key string) string {
     wd, err := os.Getwd()
     if err != nil {
         // TODO: Proper err handling
@@ -48,9 +42,9 @@ func getPathFromPubKey(key string) string {
 }
 
 // TODO: Determine t by PublicKey automatically
-func OpenAccount(publicKey []byte, t AccountType) Account {
-    b64PubKey := base64.StdEncoding.EncodeToString(publicKey)
-    path := getPathFromPubKey(b64PubKey)
+func OpenAccount(addr string, publicKey []byte) Account {
+    path := getPathByAddress(addr)
+    var t address.AccountType = address.TypeOfAddress(addr)
 
     if pathExists(path) { // Already opened this account, return saved data
         f, err := os.Open(filepath.Join(path, "index.json.gz"))
@@ -80,20 +74,10 @@ func OpenAccount(publicKey []byte, t AccountType) Account {
         return acc
 
     } else { // Return new account and save it to disk
-        var ad string
-        switch t {
-        case ECC: // ECC account
-            ad = address.ECCPubKeyToAddress(publicKey)
-        case SPHINCS: // SPHINCS account
-            ad = address.SPHINCSPubKeyToAddress(publicKey)
-        default:
-            // TODO
-            panic(1)
-        }
         acc := Account{
             Type: t,
             PublicKey: publicKey,
-            Address: ad,
+            Address: addr,
             Currencies: make([]string, 0),
         }
 
@@ -117,7 +101,7 @@ func OpenAccount(publicKey []byte, t AccountType) Account {
 
 func (acc *Account) getLedgerPath(currency string) string {
     b64PubKey := base64.StdEncoding.EncodeToString(acc.PublicKey)
-    path := getPathFromPubKey(b64PubKey)
+    path := getPathByAddress(b64PubKey)
 
     return filepath.Join(path, currency)
 }
@@ -155,10 +139,7 @@ func (acc *Account) OpenLedger(currency string) Ledger {
         led := Ledger{
             Path: ledgerPath,
             Currency: currency,
-            TxList: transactionList{
-                Headers: make([]string, 0),
-                Txs: make([]Transaction, 0),
-            },
+            TxList: make([]Transaction, 0),
             Signature: "",
         }
 
@@ -179,4 +160,11 @@ func (acc *Account) OpenLedger(currency string) Ledger {
 
         return led
     }
+}
+
+func GetPublicKeyFromAddress(addr string) string {
+    acc := OpenAccount(addr, nil)
+    led := acc.OpenLedger(NativeCurrency().Ticker)
+
+    return led.TxList[0].Origin
 }

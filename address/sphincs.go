@@ -3,6 +3,7 @@ package address
 import (
     "bytes"
     "crypto/rand"
+    "encoding/base64"
 
     "github.com/Yawning/sphincs256"
 )
@@ -53,6 +54,28 @@ func validateSPHINCSAddress(address string) bool {
     return checksum == generatedChecksum
 }
 
-func (kp SPHINCSKeyPair) GetAddress() string {
+func (kp *SPHINCSKeyPair) GetAddress() string {
     return SPHINCSPubKeyToAddress((*kp.PublicKey)[:])
+}
+
+func (kp *SPHINCSKeyPair) Sign(hash []byte) string {
+    signature := sphincs256.Sign(kp.PrivateKey, hash)
+    b64sig := base64.StdEncoding.EncodeToString(signature[:])
+
+    return b64sig
+}
+
+func ValidateSPHINCSSignature(sig string, hash string, pubkey *[1056]byte) bool {
+    rawSig, err := base64.StdEncoding.DecodeString(sig)
+    if err != nil {
+        // TODO: Proper err handling
+        panic(err)
+    }
+
+    var finalSig [41000]byte
+    for i := range rawSig {
+        finalSig[i] = rawSig[i]
+    }
+
+    return sphincs256.Verify(pubkey, []byte(hash), &finalSig)
 }

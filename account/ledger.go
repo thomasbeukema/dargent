@@ -11,13 +11,8 @@ import (
 type Ledger struct {
     Path        string
     Currency    string
-    TxList      transactionList
+    TxList      []Transaction
     Signature   string
-}
-
-type transactionList struct {
-    Headers []string
-    Txs     []Transaction
 }
 
 func (led *Ledger) Write() {
@@ -36,12 +31,7 @@ func (led *Ledger) Write() {
 }
 
 func (led *Ledger) AddTransaction(tx Transaction) {
-    if tx.Verify() && tx.Origin == led.TxList.Txs[0].Origin {
-        led.TxList.Headers = append(led.TxList.Headers, tx.Hash)
-        led.TxList.Txs = append(led.TxList.Txs, tx)
+    if tx.Verify() && tx.Origin == led.TxList[0].Origin {
+        led.TxList = append(led.TxList, tx)
     }
-}
-
-func (led *Ledger) VerifySignature(acc Account) {
-
 }

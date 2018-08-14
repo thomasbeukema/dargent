@@ -16,6 +16,14 @@ const (
 var ecdsaPadding []byte = []byte{0xAA, 0xBB, 0xCC}
 var sphincsPadding []byte = []byte{0x00, 0x11, 0x22}
 
+type AccountType int
+const (
+    ECC AccountType = iota // 0
+    SPHINCS // 1
+    UNKNOWN
+)
+
+
 // TODO: Complete function
 func ValidateAddress(address string) bool {
 
@@ -28,6 +36,38 @@ func ValidateAddress(address string) bool {
     }
 
     return true
+}
+
+func TypeOfAddress(address string) AccountType {
+    if len(address) == 70 && address[:3] == "666" && address[len(address)-3:] == "999" { // ECDSA
+        return ECC
+    } else if  len(address) == 70 && address[:3] == "999" && address[len(address)-3:] == "666" { // SPHINCS
+        return SPHINCS
+    } else {
+        return UNKNOWN
+    }
+}
+
+func TypeOfPublicKey(publicKey []byte) AccountType {
+    if len(publicKey) == 64 { // ECDSA
+        return ECC
+    } else if len(publicKey) == 1056 { // SPHINCS
+        return SPHINCS
+    } else { // unknown or invalid
+        return UNKNOWN
+    }
+}
+
+func PubKeyToAddress(pubkey []byte) string {
+    t := TypeOfPublicKey(pubkey)
+
+    if t == ECC {
+        return ECCPubKeyToAddress(pubkey)
+    } else if t == SPHINCS {
+        return SPHINCSPubKeyToAddress(pubkey)
+    } else {
+        return ""
+    }
 }
 
 // Generate hash for validation

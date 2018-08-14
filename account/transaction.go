@@ -244,13 +244,13 @@ func NewClaimTransaction(account string, ph string, txId string) (Transaction, e
 	return tx, nil
 }
 
-func NewCreateTransaction(account string) (Transaction, error) {
+func NewCreateTransaction(pubkey string) (Transaction, error) {
 	tx := Transaction{
 		Hash: "",
 		Action: Create,
 		Currency: NativeCurrency(),
 		Balance: 0,
-		Origin: account,
+		Origin: pubkey,
 	}
 
 	tx.Hash,_ = tx.GenerateHash()
@@ -258,7 +258,7 @@ func NewCreateTransaction(account string) (Transaction, error) {
 	return tx, nil
 }
 
-func NewCreateTokenTransaction(account string, c Currency, amount uint64) (Transaction, error) {
+func NewCreateTokenTransaction(pubkey string, c Currency, amount uint64) (Transaction, error) {
 	tx := Transaction{
 		Hash: "",
 		Action: Create,
