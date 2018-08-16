@@ -1,7 +1,6 @@
 package address
 
 import (
-	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -9,33 +8,37 @@ import (
 	"math/big"
 
 	"github.com/mr-tron/base58/base58"
+	"github.com/thomasbeukema/fastrand"
 )
 
 // Struct to hold ECC Keys
 type ECCKeyPair struct {
-	PrivateKey ecdsa.PrivateKey
-	PublicKey  []byte
+	PrivateKey	ecdsa.PrivateKey
+	PublicKey	[]byte
+	Entropy		*[32]byte
 }
 
 // Generate new KeyPair (new address)
-func GenerateECCKeyPair(seed []byte) ECCKeyPair {
-	curve := elliptic.P256() // Init the curve we're using
-	if seed != nil {
-		private, err := ecdsa.GenerateKey(curve, bytes.NewReader(seed)) // Generate the new private key from bip39 seed
-		if err != nil {
-			panic(1)
-		}
+func GenerateECCKeyPair(ent []byte) ECCKeyPair {
 
-		public := append(private.PublicKey.X.Bytes(), private.PublicKey.Y.Bytes()...) // Derive public key from private key
-		return ECCKeyPair{*private, public}
-	} else {
-		private, err := ecdsa.GenerateKey(curve, rand.Reader) // Generate address from own seed, no mnemonic phrase tho
-		if err != nil {
-			panic(1)
+	fastrand.New()
+	var entropy [32]byte
+
+	if ent != nil {
+		for i := range ent {
+			entropy[i] = ent[i]
 		}
-		public := append(private.PublicKey.X.Bytes(), private.PublicKey.Y.Bytes()...) // Derive public key from private key
-		return ECCKeyPair{*private, public}
+	} else {
+		entropy = fastrand.GetEntropy()
 	}
+
+	curve := elliptic.P256() // Init the curve we're using
+	private, err := ecdsa.GenerateKey(curve, fastrand.Reader) // Generate address from own seed
+	if err != nil {
+		panic(1)
+	}
+	public := append(private.PublicKey.X.Bytes(), private.PublicKey.Y.Bytes()...) // Derive public key from private key
+	return ECCKeyPair{*private, public, &entropy}
 }
 
 func ECCPubKeyToAddress(pubkey []byte) string {
@@ -66,6 +69,10 @@ func (kp ECCKeyPair) GetAddress() string {
 	return ECCPubKeyToAddress(kp.PublicKey)
 }
 
+func (kp *ECCKeyPair) Mnemonic() string {
+	return getMnemonic(kp.Entropy[:])
+}
+
 // Check if an address is actually valid
 func ValidateECCAddress(address string) bool {
 	address = address[3 : len(address)-3]                                                  // Remove the '666' prefix and '999' appendix
@@ -83,7 +90,7 @@ func (kp ECCKeyPair) Sign(hash []byte) string {
 	return base64.StdEncoding.EncodeToString(signature)      // Return the base64 encoded signature
 }
 
-func ValidateECCSignature(sig string, hash string, pubkey []byte) bool {
+func ValidateECCSignature(sig string, hash []byte, pubkey []byte) bool {
 	curve := elliptic.P256() // Init curve
 
 	signatureBytes, _ := base64.StdEncoding.DecodeString(sig) // Extract signature
@@ -103,7 +110,7 @@ func ValidateECCSignature(sig string, hash string, pubkey []byte) bool {
 	y.SetBytes(pubkey[(keyLength/2):])
 
 	rawPubKey := ecdsa.PublicKey{curve, &x, &y} // Init public key for verification
-	if ecdsa.Verify(&rawPubKey, []byte(hash), &r, &s) == false {
+	if ecdsa.Verify(&rawPubKey, hash, &r, &s) == false {
 		return false
 	}
 

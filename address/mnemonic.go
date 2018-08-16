@@ -1,16 +1,23 @@
 package address
 
 import (
-    "github.com/tyler-smith/go-bip39"
+    "github.com/NebulousLabs/entropy-mnemonics"
 )
 
 // Generate new seed and mnemonic
-func GenerateSeedAndMnemonic(password string) ([]byte, []byte) {
-	// TODO: Check for errors
+func getMnemonic(key []byte) string {
+    phrase, _ := mnemonics.ToPhrase(key, mnemonics.English)
+    return phrase.String()
+}
 
-	entropy, _ := bip39.NewEntropy(256)
-	s, _ := bip39.NewMnemonic(entropy)
-	seed := bip39.NewSeed(s, password)
+func MnemonicToEntropy(phrase string) [32]byte {
+    ent, _ := mnemonics.FromString(phrase, mnemonics.English)
 
-	return entropy, seed
+    var ent32 [32]byte
+
+    for i := range ent {
+        ent32[i] = ent[i]
+    }
+
+    return ent32
 }

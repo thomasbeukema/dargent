@@ -1,35 +1,41 @@
 package address
 
 import (
-    "bytes"
-    "crypto/rand"
     "encoding/base64"
 
     "github.com/Yawning/sphincs256"
     "github.com/mr-tron/base58/base58"
+    "github.com/thomasbeukema/fastrand"
 )
 
 type SPHINCSKeyPair struct {
 	PrivateKey	*[sphincs256.PrivateKeySize]byte
 	PublicKey	*[sphincs256.PublicKeySize]byte
+    Entropy     *[32]byte
 }
 
-func GenerateSPHINCSKeyPair(seed []byte) SPHINCSKeyPair {
-	if seed != nil { // Seed provided
-		pub, priv, err := sphincs256.GenerateKey(bytes.NewBuffer(seed))
-		if err != nil {
-			panic(err)
-		}
+func GenerateSPHINCSKeyPair(ent []byte) SPHINCSKeyPair {
 
-		return SPHINCSKeyPair{priv, pub}
-	} else { // Seed not provided, generate new one
-		pub, priv, err := sphincs256.GenerateKey(rand.Reader)
-		if err != nil {
-			panic(1)
-		}
+    fastrand.New()
 
-		return SPHINCSKeyPair{priv, pub}
+    var entropy [32]byte
+
+    if ent != nil {
+        for i := range ent {
+            entropy[i] = ent[i]
+        }
+
+        fastrand.SetEntropy(entropy)
+    } else {
+        entropy = fastrand.GetEntropy()
+    }
+
+	pub, priv, err := sphincs256.GenerateKey(fastrand.Reader)
+	if err != nil {
+		panic(1)
 	}
+
+	return SPHINCSKeyPair{priv, pub, &entropy}
 }
 
 func SPHINCSPubKeyToAddress(pubkey []byte) string {
@@ -39,6 +45,10 @@ func SPHINCSPubKeyToAddress(pubkey []byte) string {
     b32Checksum := base58.Encode(generateChecksum(HashPubKey(pubkey))) // Get checksum for the public key and generate Base32 of it
 
     return "999" + b32Pubkey + b32Checksum + "666"
+}
+
+func (kp *SPHINCSKeyPair) Mnemonic() string {
+    return getMnemonic(kp.Entropy[:])
 }
 
 func validateSPHINCSAddress(address string) bool {
@@ -66,7 +76,7 @@ func (kp *SPHINCSKeyPair) Sign(hash []byte) string {
     return b64sig
 }
 
-func ValidateSPHINCSSignature(sig string, hash string, pubkey *[1056]byte) bool {
+func ValidateSPHINCSSignature(sig string, hash []byte, pubkey *[1056]byte) bool {
     rawSig, err := base64.StdEncoding.DecodeString(sig)
     if err != nil {
         // TODO: Proper err handling
@@ -78,5 +88,5 @@ func ValidateSPHINCSSignature(sig string, hash string, pubkey *[1056]byte) bool 
         finalSig[i] = rawSig[i]
     }
 
-    return sphincs256.Verify(pubkey, []byte(hash), &finalSig)
+    return sphincs256.Verify(pubkey, hash, &finalSig)
 }

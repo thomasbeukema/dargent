@@ -20,7 +20,6 @@ const (
     UNKNOWN
 )
 
-
 // TODO: Complete function
 func ValidateAddress(address string) bool {
 

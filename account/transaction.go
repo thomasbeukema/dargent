@@ -18,20 +18,20 @@ import (
 // Define possible transaction types
 type transactionType int
 const (
-	Send transactionType = iota // 0
-	Claim // 1
-	Create // 2
-	Trust // 3
+	SEND transactionType = iota // 0
+	CLAIM // 1
+	CREATE // 2
+	TRUST // 3
 )
 
 // Define struct for transaction structure
 type Transaction struct {
 	Hash			string				`json:"h"`				// Hash for authenticity and txId
 	PreviousHash	string				`json:"p,omitempty"`	// Hash of the previous tx
-	Action			transactionType		`json:"a"`				// Type of transaction [Send, Claim, Create, Trust]
+	Action			transactionType		`json:"a"`				// Type of transaction [SEND, CLAIM, CREATE, TRUST]
 	Balance			uint64				`json:"b,omitempty"`	// Balance of the address; balance, not the tx amount
 	Currency		Currency			`json:"c,omitempty"`	// Currency of the tx
-	Origin			string				`json:"o"`				// Sender / src tx for claim tx
+	Origin			string				`json:"o"`				// SENDer / src tx for claim tx
 	Destination		string				`json:"d,omitempty"`	// Receiver
 	Expiration		string				`json:"e,omitempty"`	// Expiration for trust certificates
 }
@@ -39,11 +39,11 @@ type Transaction struct {
 // Generate hash for a transaction to ensure the authenticity of the contents of the transaction
 func (tx *Transaction) GenerateHash() (string, error) {
 	switch tx.Action { // Every type of transaction has a slightly different way of calculating the hash
-		case Send:
+		case SEND:
 			minTx := Transaction{ // Fill in important parts for the hash
 				Hash: "",
 				PreviousHash: tx.PreviousHash,
-				Action: Send,
+				Action: SEND,
 				Balance: tx.Balance,
 				Currency: tx.Currency,
 				Origin: tx.Origin,
@@ -59,11 +59,11 @@ func (tx *Transaction) GenerateHash() (string, error) {
 
 		return fmt.Sprintf("%v%x", int(tx.Action), hash[:]), nil // Return hash with the txtype in front for convenience later on
 
-		case Claim:
+		case CLAIM:
 			minTx := Transaction{
 				Hash: "",
 				PreviousHash: tx.PreviousHash,
-				Action: Send,
+				Action: SEND,
 				Origin: tx.Origin,
 				Destination: tx.Destination,
 			}
@@ -77,10 +77,10 @@ func (tx *Transaction) GenerateHash() (string, error) {
 
 			return fmt.Sprintf("%v%x", int(tx.Action), hash[:]) + tx.PreviousHash[:1], nil // For claim transaction, also put type of connected tx after hash for convenience
 
-		case Create:
+		case CREATE:
 			minTx := Transaction{
 				Hash: "",
-				Action: Create,
+				Action: CREATE,
 				Balance: tx.Balance,
 				Currency: tx.Currency,
 				Origin: tx.Origin,
@@ -95,11 +95,11 @@ func (tx *Transaction) GenerateHash() (string, error) {
 
 			return fmt.Sprintf("%v%x", int(tx.Action), hash[:]), nil
 
-		case Trust:
+		case TRUST:
 			minTx := Transaction{
 				Hash: "",
 				PreviousHash: tx.PreviousHash,
-				Action: Trust,
+				Action: TRUST,
 				Origin: tx.Origin,
 				Destination: tx.Destination,
 				Expiration: tx.Origin,
@@ -122,7 +122,7 @@ func (tx *Transaction) GenerateHash() (string, error) {
 // Verify if tx is valid
 func (tx *Transaction) Verify() bool {
 	switch tx.Action { // Each txtype has other factors to determine if tx is valid
-		case Send:
+		case SEND:
 			if tx.Balance < 0 { // Balance can't be negative
 				return false
 			}
@@ -132,12 +132,12 @@ func (tx *Transaction) Verify() bool {
 			if address.ValidateAddress(tx.Destination) != true {
 				return false
 			}
-		case Claim:
+		case CLAIM:
 			// TODO: Check origin tx
 			if address.ValidateAddress(tx.Destination) != true {
 				return false
 			}
-		case Create:
+		case CREATE:
 			if tx.Balance == 0 && tx.Currency != NativeCurrency() {
 				return false
 			}
@@ -150,7 +150,7 @@ func (tx *Transaction) Verify() bool {
 					return false
 				}
 			}
-		case Trust:
+		case TRUST:
 			currentTime := time.Now().UnixNano()
 			expiring, _ := strconv.ParseInt(tx.Expiration, 10, 64)
 			// TODO: Check for error
@@ -176,7 +176,7 @@ func NewSendTransaction(account string, ph string, destination string, amount ui
 	tx := Transaction{
 		Hash: "",
 		PreviousHash: ph,
-		Action: Send,
+		Action: SEND,
 		Balance: amount,
 		Currency: c,
 		Origin: account,
@@ -192,7 +192,7 @@ func NewClaimTransaction(account string, ph string, txId string) (Transaction, e
 	tx := Transaction{
 		Hash: "",
 		PreviousHash: ph,
-		Action: Claim,
+		Action: CLAIM,
 		Origin: txId,
 		Destination: account,
 	}
@@ -207,7 +207,7 @@ func NewCreateTransaction(pubkey []byte) (Transaction, error) {
 
 	tx := Transaction{
 		Hash: "",
-		Action: Create,
+		Action: CREATE,
 		Currency: NativeCurrency(),
 		Balance: 0,
 		Origin: b64pubkey,
@@ -221,7 +221,7 @@ func NewCreateTransaction(pubkey []byte) (Transaction, error) {
 func NewCreateTokenTransaction(pubkey string, c Currency, amount uint64) (Transaction, error) {
 	tx := Transaction{
 		Hash: "",
-		Action: Create,
+		Action: CREATE,
 		Currency: c,
 		Balance: amount,
 	}
@@ -235,7 +235,7 @@ func NewTrustTransaction(account string, destination string, expiration string) 
 	tx := Transaction{
 		Hash: "",
 		PreviousHash: "",
-		Action: Trust,
+		Action: TRUST,
 		Origin: account,
 		Destination: destination,
 		Expiration: expiration,
